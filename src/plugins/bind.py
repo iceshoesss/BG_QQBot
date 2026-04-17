@@ -15,13 +15,14 @@ from .league_api import api_post
 __plugin_meta__ = PluginMetadata(
     name="QQ 绑定",
     description="用网站生成的绑定码关联 QQ 与游戏账号",
-    usage="发送「绑定 绑定码」或「我的绑定」",
+    usage="发送「绑定 绑定码」「我的绑定」「解绑」",
 )
 
 BIND_FILE = Path(__file__).parent.parent.parent / "data" / "qq_bindings.json"
 
 bind_cmd = on_command("绑定", priority=5, block=True)
 my_bind_cmd = on_command("我的绑定", aliases={"查绑定", "查询绑定"}, priority=5, block=True)
+unbind_cmd = on_command("解绑", aliases={"取消绑定", "解除绑定"}, priority=5, block=True)
 
 
 def _load_bindings() -> dict:
@@ -86,3 +87,17 @@ async def handle_my_bind(bot: Bot, event: MessageEvent):
             "1. 登录联赛网站 → 个人页 → 生成绑定码\n"
             "2. 发送「绑定 <绑定码>」完成绑定"
         )
+
+
+@unbind_cmd.handle()
+async def handle_unbind(bot: Bot, event: MessageEvent):
+    qq_id = str(event.user_id)
+    bindings = _load_bindings()
+    info = bindings.pop(qq_id, None)
+
+    if not info:
+        await unbind_cmd.finish("你还没有绑定，无需解绑。")
+
+    _save_bindings(bindings)
+    logger.info(f"QQ 解绑: {qq_id} ← {info['battleTag']}")
+    await unbind_cmd.finish(f"已解绑 {info['displayName']}，之后问题对局通知将不再 @ 你。")
