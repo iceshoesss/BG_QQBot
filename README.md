@@ -43,7 +43,7 @@ BG_QQBot/
 # 安装依赖
 pip install -r requirements.txt
 
-# 复制并编辑配置
+# 复制并编辑配置（开发环境用 .env.dev，生产用 .env.prod）
 cp .env.dev .env
 
 # 启动（需要 OneBot V11 客户端已连接）
