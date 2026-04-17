@@ -1,6 +1,6 @@
 """排行榜 / 选手查询插件"""
 
-from nonebot import on_command
+from nonebot import on_command, on_message
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent, Message
 from nonebot.params import CommandArg
 from nonebot.plugin import PluginMetadata
@@ -32,13 +32,13 @@ async def handle_leaderboard(bot: Bot, event: MessageEvent):
     for i, p in enumerate(data[:10], 1):
         name = p.get("displayName", "?")
         pts = p.get("totalPoints", 0)
-        games = p.get("leagueGames", 0)
-        chickens = p.get("chickens", 0)
+        games = p.get("totalGames", 0)
+        wins = p.get("wins", 0)
         avg = p.get("avgPlacement", 0)
-        win_rate = f"{p.get('winRate', 0) * 100:.0f}%"
+        win_rate = f"{wins / games * 100:.0f}%" if games > 0 else "-"
         lines.append(
             f"{i}. {name} | {pts}分 | {games}场 | "
-            f"胜率{win_rate} | 场均{avg:.1f} | 吃鸡{chickens}"
+            f"胜率{win_rate} | 场均{avg:.1f}"
         )
 
     await leaderboard_cmd.finish("\n".join(lines))
@@ -57,15 +57,24 @@ async def handle_player(bot: Bot, event: MessageEvent, args: Message = CommandAr
 
     name = data.get("displayName", tag)
     pts = data.get("totalPoints", 0)
-    games = data.get("leagueGames", 0)
-    chickens = data.get("chickens", 0)
+    games = data.get("totalGames", 0)
+    wins = data.get("wins", 0)
     avg = data.get("avgPlacement", 0)
-    win_rate = f"{data.get('winRate', 0) * 100:.0f}%"
+    win_rate = f"{wins / games * 100:.0f}%" if games > 0 else "-"
 
     msg = (
         f"👤 {name}\n"
         f"积分: {pts} | 场次: {games}\n"
-        f"吃鸡: {chickens} | 胜率: {win_rate}\n"
+        f"吃鸡: {wins} | 胜率: {win_rate}\n"
         f"场均排名: {avg:.1f}"
     )
     await player_cmd.finish(msg)
+
+
+# 调试用：确认消息能被 matcher 捕获
+debug_matcher = on_message(priority=99, block=False)
+
+
+@debug_matcher.handle()
+async def _debug(bot: Bot, event: MessageEvent):
+    logger.debug(f"[DEBUG MSG] type={event.get_event_name()} text={event.get_plaintext()}")

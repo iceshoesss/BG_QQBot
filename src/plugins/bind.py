@@ -1,16 +1,17 @@
 """QQ 绑定 — 用户在网站生成绑定码，发给 bot 完成关联"""
 
 import json
-import os
 from pathlib import Path
 
-from nonebot import on_command
+from nonebot import on_command, get_driver
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent, Message
 from nonebot.params import CommandArg
 from nonebot.plugin import PluginMetadata
 from nonebot.log import logger
 
 from .league_api import api_post
+
+driver = get_driver()
 
 __plugin_meta__ = PluginMetadata(
     name="QQ 绑定",
@@ -44,7 +45,7 @@ async def handle_bind(bot: Bot, event: MessageEvent, args: Message = CommandArg(
             "绑定码在联赛网站个人页生成（5分钟有效）"
         )
 
-    bot_key = os.environ.get("BOT_API_KEY", "")
+    bot_key = getattr(driver.config, "bot_api_key", "")
     qq_id = str(event.user_id)
 
     try:
