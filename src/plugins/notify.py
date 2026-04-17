@@ -82,20 +82,15 @@ def _build_webhook_msg(payload: dict) -> list:
 
     segments = [MessageSegment.text(f"{title}\n开始时间: {started_at}\n")]
 
-    # @ 已绑定的玩家，未绑定的显示名字
-    at_list = []
-    for name in players:
-        qq_id = _find_qq_by_display_name(bindings, name)
-        if qq_id:
-            at_list.append(MessageSegment.at(int(qq_id)))
-        else:
-            at_list.append(MessageSegment.text(name))
-
     segments.append(MessageSegment.text("涉及玩家: "))
-    for i, seg in enumerate(at_list):
+    for i, name in enumerate(players):
         if i > 0:
             segments.append(MessageSegment.text("、"))
-        segments.append(seg)
+        segments.append(MessageSegment.text(name))
+        qq_id = _find_qq_by_display_name(bindings, name)
+        if qq_id:
+            segments.append(MessageSegment.text(" "))
+            segments.append(MessageSegment.at(int(qq_id)))
 
     segments.append(MessageSegment.text("\n请以上玩家补录排名"))
     return segments
