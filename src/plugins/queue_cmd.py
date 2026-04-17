@@ -18,26 +18,26 @@ queue_cmd = on_command("队列", aliases={"排队", "queue"}, priority=5, block=
 @queue_cmd.handle()
 async def handle_queue(bot: Bot, event: MessageEvent):
     try:
-        data = await api_get("/api/queue")
+        signup = await api_get("/api/queue")
+        waiting = await api_get("/api/waiting-queue")
     except Exception as e:
         await queue_cmd.finish(f"查询失败: {e}")
 
-    signup = data.get("signup", [])
-    waiting = data.get("waiting", [])
-
     lines = []
     if waiting:
-        lines.append(f"⏳ 等待开赛 ({len(waiting)}/8):")
-        for p in waiting:
-            name = p.get("displayName", "?")
-            lines.append(f"  {name}")
+        for group in waiting:
+            players = group.get("players", [])
+            lines.append(f"⏳ 等待开赛 ({len(players)}/8):")
+            for p in players:
+                name = p.get("name", "?")
+                lines.append(f"  {name}")
     else:
         lines.append("⏳ 暂无等待组")
 
     if signup:
         lines.append(f"\n📝 报名中 ({len(signup)}):")
         for p in signup:
-            name = p.get("displayName", "?")
+            name = p.get("name", "?")
             lines.append(f"  {name}")
     else:
         lines.append("\n📝 暂无报名")
