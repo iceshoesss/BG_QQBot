@@ -1,7 +1,7 @@
 """QQ 绑定 — 将 QQ 号关联到游戏账号"""
 
 from nonebot import on_command
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageSegment
+from nonebot.adapters.onebot.v11 import Bot, MessageEvent, MessageSegment
 from nonebot.params import CommandArg
 from nonebot.plugin import PluginMetadata
 
@@ -17,7 +17,7 @@ bind_cmd = on_command("绑定", priority=5, block=True)
 
 
 @bind_cmd.handle()
-async def handle_bind(bot: Bot, event: GroupMessageEvent, args=CommandArg()):
+async def handle_bind(bot: Bot, event: MessageEvent, args=CommandArg()):
     battle_tag = args.extract_plain_text().strip()
     if not battle_tag:
         await bind_cmd.finish("用法: 绑定 BattleTag#1234")

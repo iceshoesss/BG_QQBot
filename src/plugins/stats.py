@@ -1,9 +1,10 @@
 """排行榜 / 选手查询插件"""
 
-from nonebot import on_command
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message
+from nonebot import on_command, on_message
+from nonebot.adapters.onebot.v11 import Bot, MessageEvent, Message
 from nonebot.params import CommandArg
 from nonebot.plugin import PluginMetadata
+from nonebot.log import logger
 
 from .league_api import api_get
 
@@ -18,7 +19,7 @@ player_cmd = on_command("战绩", aliases={"查玩家", "玩家"}, priority=5, b
 
 
 @leaderboard_cmd.handle()
-async def handle_leaderboard(bot: Bot, event: GroupMessageEvent):
+async def handle_leaderboard(bot: Bot, event: MessageEvent):
     try:
         data = await api_get("/api/players", params={"sort": "points", "order": "desc"})
     except Exception as e:
@@ -44,7 +45,7 @@ async def handle_leaderboard(bot: Bot, event: GroupMessageEvent):
 
 
 @player_cmd.handle()
-async def handle_player(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+async def handle_player(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
     tag = args.extract_plain_text().strip()
     if not tag:
         await player_cmd.finish("用法: 战绩 玩家名#1234")
@@ -68,3 +69,12 @@ async def handle_player(bot: Bot, event: GroupMessageEvent, args: Message = Comm
         f"场均排名: {avg:.1f}"
     )
     await player_cmd.finish(msg)
+
+
+# 调试用：确认消息能被 matcher 捕获
+debug_matcher = on_message(priority=99, block=False)
+
+
+@debug_matcher.handle()
+async def _debug(bot: Bot, event: MessageEvent):
+    logger.debug(f"[DEBUG MSG] type={event.get_event_name()} text={event.get_plaintext()}")

@@ -1,7 +1,7 @@
 """队列查询 — 查看当前联赛队列状态"""
 
 from nonebot import on_command
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import Bot, MessageEvent
 from nonebot.plugin import PluginMetadata
 
 from .league_api import api_get
@@ -16,7 +16,7 @@ queue_cmd = on_command("队列", aliases={"排队", "queue"}, priority=5, block=
 
 
 @queue_cmd.handle()
-async def handle_queue(bot: Bot, event: GroupMessageEvent):
+async def handle_queue(bot: Bot, event: MessageEvent):
     try:
         data = await api_get("/api/queue")
     except Exception as e:

@@ -1,7 +1,7 @@
 """联赛通知 — 对局结束时推送结果到 QQ 群"""
 
 from nonebot import on_command
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import Bot, MessageEvent
 from nonebot.plugin import PluginMetadata
 
 from .league_api import api_get
@@ -16,7 +16,7 @@ recent_cmd = on_command("最近对局", aliases={"对局", "战报"}, priority=5
 
 
 @recent_cmd.handle()
-async def handle_recent(bot: Bot, event: GroupMessageEvent):
+async def handle_recent(bot: Bot, event: MessageEvent):
     try:
         data = await api_get("/api/matches", params={"limit": 5})
     except Exception as e:
