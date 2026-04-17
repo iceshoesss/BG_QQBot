@@ -62,9 +62,19 @@ docker run -d --env .env bg-qqbot:latest
 | 变量 | 说明 |
 |------|------|
 | `LEAGUE_API_URL` | 联赛网站 API 地址 |
-| `LEAGUE_NOTIFY_GROUP_ID` | 通知群号 |
+| `LEAGUE_NOTIFY_GROUP_ID` | 通知群号（问题对局 webhook 推送到此群） |
 | `SUPERUSERS` | 管理员 QQ 号 |
 | `ONEBOT_WS_URLS` | OneBot 反向 WS 地址 |
+| `BOT_API_KEY` | 与 LeagueWeb 的 `BOT_API_KEY` 一致 |
+
+## Webhook 通知
+
+机器人提供 `/webhook/league` 端点接收 LeagueWeb 的问题对局通知（超时、掉线）。
+
+LeagueWeb 配置环境变量：
+```
+WEBHOOK_URL=http://<机器人地址>:<端口>/webhook/league
+```
 
 ## 版本管理
 
