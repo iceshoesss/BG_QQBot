@@ -125,11 +125,13 @@ async def _send_to_group(msg_segments: list):
 @driver.on_startup
 async def register_webhook_route():
     """注册 webhook 接收路由"""
+    from fastapi import Request
+    from fastapi.responses import JSONResponse
+
     app = driver.server_app
 
     @app.post("/webhook/league")
-    async def league_webhook(request):
-        from fastapi.responses import JSONResponse
+    async def league_webhook(request: Request):
 
         try:
             payload = await request.json()
