@@ -1,6 +1,9 @@
 """联赛通知 — 对局结束推送 + Webhook 接收问题对局通知"""
 
+import json
 import os
+from pathlib import Path
+
 from nonebot import on_command, get_driver
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent, MessageSegment
 from nonebot.plugin import PluginMetadata
@@ -17,6 +20,21 @@ __plugin_meta__ = PluginMetadata(
 recent_cmd = on_command("最近对局", aliases={"对局", "战报"}, priority=5, block=True)
 
 NOTIFY_GROUP_ID = os.environ.get("LEAGUE_NOTIFY_GROUP_ID", "")
+BIND_FILE = Path(__file__).parent.parent.parent / "data" / "qq_bindings.json"
+
+
+def _load_bindings() -> dict:
+    if BIND_FILE.exists():
+        return json.loads(BIND_FILE.read_text(encoding="utf-8"))
+    return {}
+
+
+def _find_qq_by_display_name(bindings: dict, display_name: str) -> str | None:
+    """通过 displayName 反查 QQ 号"""
+    for qq_id, info in bindings.items():
+        if info.get("displayName") == display_name:
+            return qq_id
+    return None
 
 
 @recent_cmd.handle()
@@ -47,44 +65,56 @@ async def handle_recent(bot: Bot, event: MessageEvent):
 driver = get_driver()
 
 
-def _format_webhook(payload: dict) -> str | None:
-    """将 webhook payload 格式化为群消息"""
+def _build_webhook_msg(payload: dict) -> list:
+    """将 webhook payload 格式化为群消息（支持 @ 玩家）"""
     msg_type = payload.get("type", "")
-    game_uuid = payload.get("gameUuid", "")
-    players = payload.get("players", [])
+    players = payload.get("players", [])  # displayName 列表
     started_at = payload.get("startedAt", "")[:16].replace("T", " ")
-    player_str = "、".join(players) if players else "未知"
+
+    bindings = _load_bindings()
 
     if msg_type == "timeout":
-        return (
-            f"⏰ 对局超时结束\n"
-            f"开始时间: {started_at}\n"
-            f"参与玩家: {player_str}\n"
-            f"请管理员补录排名"
-        )
-    if msg_type == "abandoned":
-        return (
-            f"🔌 对局部分掉线\n"
-            f"开始时间: {started_at}\n"
-            f"参与玩家: {player_str}\n"
-            f"请管理员补录排名"
-        )
-    return None
+        title = "⏰ 对局超时结束"
+    elif msg_type == "abandoned":
+        title = "🔌 对局部分掉线"
+    else:
+        return []
+
+    segments = [MessageSegment.text(f"{title}\n开始时间: {started_at}\n")]
+
+    # @ 已绑定的玩家，未绑定的显示名字
+    at_list = []
+    for name in players:
+        qq_id = _find_qq_by_display_name(bindings, name)
+        if qq_id:
+            at_list.append(MessageSegment.at(int(qq_id)))
+        else:
+            at_list.append(MessageSegment.text(name))
+
+    segments.append(MessageSegment.text("涉及玩家: "))
+    for i, seg in enumerate(at_list):
+        if i > 0:
+            segments.append(MessageSegment.text("、"))
+        segments.append(seg)
+
+    segments.append(MessageSegment.text("\n请以上玩家补录排名"))
+    return segments
 
 
-async def _send_to_group(msg: str):
+async def _send_to_group(msg_segments: list):
     """发送消息到联赛通知群"""
     if not NOTIFY_GROUP_ID:
         logger.warning("LEAGUE_NOTIFY_GROUP_ID 未配置，跳过通知")
         return
 
-    # 从已连接的 bot 中找一个能发群消息的
     from nonebot import get_bots
-    bots = get_bots()
-    for bot_id, bot in bots.items():
+    for bot_id, bot in get_bots().items():
         if isinstance(bot, Bot):
             try:
-                await bot.send_group_msg(group_id=int(NOTIFY_GROUP_ID), message=msg)
+                await bot.send_group_msg(
+                    group_id=int(NOTIFY_GROUP_ID),
+                    message=msg_segments,
+                )
                 logger.info(f"webhook 通知已发送到群 {NOTIFY_GROUP_ID}")
                 return
             except Exception as e:
@@ -95,11 +125,10 @@ async def _send_to_group(msg: str):
 @driver.on_startup
 async def register_webhook_route():
     """注册 webhook 接收路由"""
-    app = driver.server_app  # FastAPI 实例
+    app = driver.server_app
 
     @app.post("/webhook/league")
     async def league_webhook(request):
-        from fastapi import Request
         from fastapi.responses import JSONResponse
 
         try:
@@ -109,8 +138,8 @@ async def register_webhook_route():
 
         logger.info(f"收到 webhook: {payload.get('type')}")
 
-        msg = _format_webhook(payload)
-        if msg:
-            await _send_to_group(msg)
+        msg_segments = _build_webhook_msg(payload)
+        if msg_segments:
+            await _send_to_group(msg_segments)
 
         return JSONResponse({"ok": True})
