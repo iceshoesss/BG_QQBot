@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """炉石战棋联赛 QQ 机器人"""
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import nonebot
 from nonebot.adapters.onebot.v11 import Adapter as OneBotV11Adapter
 
