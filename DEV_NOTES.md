@@ -38,6 +38,10 @@ LeagueWeb cleanup 线程（每 CLEANUP_INTERVAL 秒）
 - 通知只发一次：标记 `status` 后不再重复匹配
 - abandoned 类型只通知 placement=null 的玩家
 
+## 已停用命令
+
+排行榜、战绩查询、队列查询、最近对局、帮助/菜单 — 代码移至 `disabled_plugins/` 目录，需要时移回 `src/plugins/` 即可恢复。
+
 ## 待开发
 
 - [x] QQ webhook 回调处理（LeagueWeb 推送问题对局 → bot 转发到群）
