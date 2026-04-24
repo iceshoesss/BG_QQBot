@@ -29,10 +29,10 @@ def _load_bindings() -> dict:
     return {}
 
 
-def _find_qq_by_display_name(bindings: dict, display_name: str) -> str | None:
-    """通过 displayName 反查 QQ 号"""
+def _find_qq_by_battle_tag(bindings: dict, battle_tag: str) -> str | None:
+    """通过 battleTag 反查 QQ 号（battleTag 带 #tag，唯一）"""
     for qq_id, info in bindings.items():
-        if info.get("displayName") == display_name:
+        if info.get("battleTag") == battle_tag:
             return qq_id
     return None
 
@@ -83,11 +83,18 @@ def _build_webhook_msg(payload: dict) -> list:
     segments = [MessageSegment.text(f"{title}\n开始时间: {started_at}\n")]
 
     segments.append(MessageSegment.text("涉及玩家: "))
-    for i, name in enumerate(players):
+    for i, p in enumerate(players):
+        if isinstance(p, dict):
+            display_name = p.get("displayName", "")
+            battle_tag = p.get("battleTag", "")
+        else:
+            # 兼容旧格式（纯字符串）
+            display_name = str(p)
+            battle_tag = ""
         if i > 0:
             segments.append(MessageSegment.text("、"))
-        segments.append(MessageSegment.text(name))
-        qq_id = _find_qq_by_display_name(bindings, name)
+        segments.append(MessageSegment.text(display_name or battle_tag))
+        qq_id = _find_qq_by_battle_tag(bindings, battle_tag) if battle_tag else None
         if qq_id:
             segments.append(MessageSegment.text(" "))
             segments.append(MessageSegment.at(int(qq_id)))
